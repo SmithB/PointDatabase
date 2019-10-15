@@ -25,6 +25,7 @@ class geo_index(dict):
     def __init__(self, delta=[1000,1000], SRS_proj4=None, data=None):
         dict.__init__(self)
         self.attrs={'delta':delta,'SRS_proj4':SRS_proj4, 'n_files':0}
+        self.filename=None
         self.data=data
         if self.data is not None:
             if hasattr(data,'x'):
@@ -80,7 +81,7 @@ class geo_index(dict):
             uOrd, first=np.unique(ordering, return_index=True)
             uOrd, temp=np.unique(-ordering[::-1], return_index=True)
             last=len(ordering)-1-temp[::-1]
-            keys=['%d_%d' % (delta[0]*xy_bin[first[ind],0], delta[1]*xy_bin[first[ind],1]) for ind  in range(len(first))]
+            keys=['%d_%d' % (delta[0]*xy_bin[first[ind],0], delta[1]*xy_bin[first[ind],1]) for ind  in range(len(first)) if np.isfinite(xy_bin[first[ind],1])]
         else:
             # assume that the first_last values match the bins
             first, last=first_last
@@ -91,7 +92,7 @@ class geo_index(dict):
                 self[key] = {'file_num':np.array(int(number), ndmin=1), 'offset_start':np.array(first[ind], ndmin=1), 'offset_end':np.array(last[ind], ndmin=1)}
             else:
                 self[key] = {'file_num':np.array(int(number), ndmin=1), 'offset_start':np.array(fake_offset_val, ndmin=1), 'offset_end':np.array(fake_offset_val, ndmin=1)}
-        #In some cases the files are predefined.  If this is not the case, use the current filename 
+        #In some cases the files are predefined.  If this is not the case, use the current filename
         if 'file_0' not in self.attrs:
             self.attrs['file_0']=filename
             self.attrs['type_0']=file_type
@@ -122,7 +123,7 @@ class geo_index(dict):
             self.attrs['dir_root']=dir_root
         # make a list of files in the destination index (self)
         fileListTo=list()
-       
+
         for index in index_list:
             # check if a particular input file is alread in the output index, otherwise add it
             # keep track of how the filenames in the input index correspond to those in the output index
@@ -158,7 +159,7 @@ class geo_index(dict):
                 if bin in self:
                     append_data(self[bin],'file_num', newFileNums)
                     for field in ('offset_start','offset_end'):
-                        append_data(self[bin], field, index[bin][field][keep])                        
+                        append_data(self[bin], field, index[bin][field][keep])
                 # Otherwise, make a new bin in self
                 else:
                     self[bin]=dict()
@@ -182,6 +183,7 @@ class geo_index(dict):
         self.attrs=h5_i.attrs
         self.h5_file=h5_f
         self.h5_file_index=h5_f['index']
+        self.filename=index_file
         #if read_file is True:
         #    h5_f.close()
         return self
@@ -240,13 +242,12 @@ class geo_index(dict):
             self.from_list(temp)
         if file_type in ['ATL11']:
             temp=list()
-            this_field_dict={'corrected_h':('ref_pt_lat','ref_pt_lon')}
+            this_field_dict={'corrected_h':('latitude','longitude')}
             for beam_pair in (1, 2, 3):
                 D=ATL11.data().from_file(filename, pair=beam_pair, field_dict=this_field_dict).get_xy(self.attrs['SRS_proj4'])
-                D.get_xy(self.attrs['SRS_proj4'])
                 if D.x.shape[0] > 0:
                     temp.append(geo_index(delta=self.attrs['delta'], \
-                                          SRS_proj4=self.attrs['SRS_proj4']).from_xy([D.x, D.y], '%s:pair%d' % (filename_out, beam_pair), 'ATL06', number=number))
+                                          SRS_proj4=self.attrs['SRS_proj4']).from_xy([D.x, D.y], '%s:pair%d' % (filename_out, beam_pair), 'ATL11', number=number))
             self.from_list(temp)
 
         if file_type in ['ATM_Qfit']:
@@ -296,7 +297,7 @@ class geo_index(dict):
                 xy=[[], []]
                 for key in h5f:
                     m=bin_re.match(key)
-                    if m is None: 
+                    if m is None:
                         continue
                     xy[0].append(np.float(m.group(1)))
                     xy[1].append(np.float(m.group(2)))
@@ -416,7 +417,12 @@ class geo_index(dict):
                 i0=i0[keep]
                 i1=i1[keep]
                 xy=xy[keep,:]
-            query_results[self.attrs['file_%d' % out_file_num]]={
+            # check if query_key is of the form :pair_1.  If so, prepend the index file
+            # name (lets the index for an ATL06 or an ATL11 have :pair1 as a file)
+            query_key=self.attrs['file_%d' % out_file_num]
+            if query_key is not None and query_key[0]==':':
+                query_key = self.filename+query_key
+            query_results[query_key]={
             'type':self.attrs['type_%d' % out_file_num],
             'offset_start':i0,
             'offset_end':i1,
@@ -476,8 +482,8 @@ class geo_index(dict):
 def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, data=None, group='index', dir_root=''):
     # read the data from a set of query results
     # Currently the function knows how to read:
-    # h5_geoindex 
-    # indexed h5s 
+    # h5_geoindex
+    # indexed h5s
     # Qfit data (waveform and plain)
     # DEM data (filtered and not)
     # ATL06 data.
@@ -485,7 +491,7 @@ def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, d
     if len(dir_root)>0:
         dir_root += '/'
     out_data=list()
-    
+
     # some data types take a dictionary rather than a list of fields
     if isinstance(fields, dict):
         field_dict=fields
@@ -493,7 +499,7 @@ def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, d
     else:
         field_dict=None
         field_list=fields
-    
+
     # if we are querying any DEM data, work out the bounds of the query so we don't have to read the whole DEMs
     all_types=[query_results[key]['type'] for key in query_results]
     if 'DEM' in all_types or 'filtered_DEM' in all_types:
@@ -503,7 +509,7 @@ def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, d
             all_x += result['x'].tolist()
             all_y += result['y'].tolist()
         bounds=[[np.min(all_x)-delta[0]/2, np.max(all_x)+delta[0]/2], [np.min(all_y)-delta[1]/2, np.max(all_y)+delta[1]/2]]
-    
+
     for file_key, result in query_results.items():
         if dir_root is not None:
             try:
@@ -520,12 +526,14 @@ def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, d
             D6_file, pair=this_file.split(':pair')
             D=[ATL06_data(beam_pair=int(pair), list_of_fields=field_list, field_dict=field_dict).from_file(\
                 filename=D6_file, index_range=np.array(temp)) \
-                for temp in zip(result['offset_start'], result['offset_end'])]            
+                for temp in zip(result['offset_start'], result['offset_end'])]
         if result['type'] == 'ATL11':
             D11_file, pair = this_file.split(':pair')
-            D=[ATL11.data(beam_pair=int(pair), list_of_fields=field_list, field_dict=field_dict).from_file(\
-                filename=D11_file, index_range=np.array(temp)) \
-                for temp in zip(result['offset_start'], result['offset_end'])]                   
+            D=[]
+            for temp in  zip(result['offset_start'], result['offset_end']) :
+                D.append(ATL11.data(pair_num=int(pair)).from_file(\
+                filename=D11_file, index_range=np.array(temp), field_dict=field_dict,\
+                pair=int(pair)))
         if result['type'] == 'ATM_Qfit':
             D=[Qfit_data(filename=this_file, index_range=np.array(temp)) for temp in zip(result['offset_start'], result['offset_end'])]
         if result['type'] == 'ATM_waveform':
@@ -659,5 +667,5 @@ def append_data(group, field, newdata):
 def index_list_for_files(filename_list, file_type, delta, SRS_proj4, dir_root='', group='index'):
     index_list=list()
     for filename in filename_list:
-        index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, group=group, number=0))
+        index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, number=0))
     return index_list
