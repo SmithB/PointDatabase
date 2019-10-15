@@ -59,7 +59,7 @@ class Qfit_data:
           
     def read_from_file(self, filename, field_dict, index_range=[0,-1], x_bounds=None, y_bounds=None, beam_pair=None, NICK=None): 
         self.filename=filename
-        h5_f=h5py.File(filename)
+        h5_f=h5py.File(filename,'r')
         # find the date and time number in filename
         m=re.search(r"ATM1B.*_(\d\d\d\d)(\d\d)(\d\d)_(\d\d)(\d\d)(\d\d).*.h5",filename)
         this_time=[int(m.group(ind+1)) for ind in range(6)]
