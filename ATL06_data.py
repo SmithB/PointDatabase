@@ -212,6 +212,8 @@ class ATL06_data:
                 out_srs.ImportFromWkt(proj4_string)
         ll_srs=osr.SpatialReference()
         ll_srs.ImportFromEPSG(4326)
+        if hasattr(osr,'OAMS_TRADITIONAL_GIS_ORDER'):
+            ll_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ct=osr.CoordinateTransformation(ll_srs, out_srs)
         if self.latitude.size==0:
             self.x=np.zeros_like(self.latitude)

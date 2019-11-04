@@ -39,6 +39,9 @@ def demBounds(demFile, native=True, EPSG=4326, proj4=None):
         outRef.ImportFromProj4(proj4)
     demRef = osr.SpatialReference()
     demRef.ImportFromWkt(proj)
+    if hasattr(osr,'OAMS_TRADITIONAL_GIS_ORDER'):
+        demRef.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+
     xform = osr.CoordinateTransformation(demRef, outRef)
     xyOut=np.array(xform.TransformPoints( np.c_[x, y, np.zeros_like(x)]))[:,0:2]
     ds=None

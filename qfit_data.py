@@ -104,6 +104,8 @@ class Qfit_data:
             out_srs.ImportFromProj4(proj4_str)
         ll_srs=osr.SpatialReference()
         ll_srs.ImportFromEPSG(4326)
+        if hasattr(osr,'OAMS_TRADITIONAL_GIS_ORDER'):
+            ll_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ct=osr.CoordinateTransformation(ll_srs, out_srs)
         #x, y, z = list(zip(*[ct.TransformPoint(*xyz) for xyz in zip(np.ravel(D.longitude), np.ravel(D.latitude), np.zeros_like(np.ravel(D.latitude)))]))
         if self.latitude.size==0:
