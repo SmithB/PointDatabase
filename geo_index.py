@@ -19,6 +19,7 @@ from PointDatabase.qfit_data import Qfit_data
 from PointDatabase.read_DEM import read_DEM
 from PointDatabase.WV_date import WV_MatlabDate
 from PointDatabase.point_data import point_data
+import ATL11
 
 class geo_index(dict):
     def __init__(self, delta=[1000,1000], SRS_proj4=None, data=None):
@@ -169,14 +170,14 @@ class geo_index(dict):
         self.attrs['n_files']=len(fileListTo)
         return self
 
-    def from_file(self, index_file, read_file=False):
+    def from_file(self, index_file, group='index', read_file=False):
         # read geo_index info from file 'index_file.'
         # If read_file is set to False, the file is not read, but the
         # h5_file_index attribute of the resulting geo_index is set to a
         # reference to the hdf_file's 'index' attribute.  This seems to be
         # faster than reading the whole file.
         h5_f = h5py.File(index_file,'r')
-        h5_i = h5_f['index']
+        h5_i = h5_f[group]
         if read_file:
             for bin in h5_i.keys():
                 self[bin]=h5_i[bin]
@@ -236,8 +237,20 @@ class geo_index(dict):
             for beam_pair in (1, 2, 3):
                 D=ATL06_data(beam_pair=beam_pair, field_dict=this_field_dict).from_file(filename).get_xy(self.attrs['SRS_proj4'])
                 if D.latitude.shape[0] > 0:
-                    temp.append(geo_index(delta=self.attrs['delta'], SRS_proj4=self.attrs['SRS_proj4']).from_xy([np.nanmean(D.x, axis=1), np.nanmean(D.y, axis=1)], '%s:pair%d' % (filename_out, beam_pair), 'ATL06', number=number))
+                    temp.append(geo_index(delta=self.attrs['delta'], SRS_proj4=\
+                                          self.attrs['SRS_proj4']).from_xy([np.nanmean(D.x, axis=1), np.nanmean(D.y, axis=1)], '%s:pair%d' % (filename_out, beam_pair), 'ATL06', number=number))
             self.from_list(temp)
+        if file_type in ['ATL11']:
+            temp=list()
+            this_field_dict={'corrected_h':('ref_pt_lat','ref_pt_lon')}
+            for beam_pair in (1, 2, 3):
+                D=ATL11.data().from_file(filename, pair=beam_pair, field_dict=this_field_dict).get_xy(self.attrs['SRS_proj4'])
+                D.get_xy(self.attrs['SRS_proj4'])
+                if D.x.shape[0] > 0:
+                    temp.append(geo_index(delta=self.attrs['delta'], \
+                                          SRS_proj4=self.attrs['SRS_proj4']).from_xy([D.x, D.y], '%s:pair%d' % (filename_out, beam_pair), 'ATL06', number=number))
+            self.from_list(temp)
+
         if file_type in ['ATM_Qfit']:
             D=Qfit_data(filename=filename, list_of_fields=['latitiude','longitude', 'time'])
             if D.latitude.shape[0] > 0:
@@ -466,7 +479,7 @@ class geo_index(dict):
         result=[p1 for p1 in ['%d_%d' % p0 for p0 in zip(pts[0], pts[1])] if p1 in self]
         return result
 
-def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, data=None, dir_root=''):
+def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, data=None, group='index', dir_root=''):
     # read the data from a set of query results
     # Currently the function knows how to read:
     # h5_geoindex 
@@ -478,6 +491,15 @@ def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, d
     if len(dir_root)>0:
         dir_root += '/'
     out_data=list()
+    
+    # some data types take a dictionary rather than a list of fields
+    if isinstance(fields, dict):
+        field_dict=fields
+        field_list=None
+    else:
+        field_dict=None
+        field_list=fields
+    
     # if we are querying any DEM data, work out the bounds of the query so we don't have to read the whole DEMs
     all_types=[query_results[key]['type'] for key in query_results]
     if 'DEM' in all_types or 'filtered_DEM' in all_types:
@@ -502,15 +524,14 @@ def get_data_for_geo_index(query_results, delta=[10000., 10000.], fields=None, d
             if fields is None:
                 fields={None:(u'latitude',u'longitude',u'h_li',u'delta_time')}
             D6_file, pair=this_file.split(':pair')
-            if isinstance(fields, dict):
-                field_dict=fields
-                field_list=None
-            else:
-                field_dict=None
-                field_list=fields
             D=[ATL06_data(beam_pair=int(pair), list_of_fields=field_list, field_dict=field_dict).from_file(\
                 filename=D6_file, index_range=np.array(temp)) \
                 for temp in zip(result['offset_start'], result['offset_end'])]            
+        if result['type'] == 'ATL11':
+            D11_file, pair = this_file.split(':pair')
+            D=[ATL11.data(beam_pair=int(pair), list_of_fields=field_list, field_dict=field_dict).from_file(\
+                filename=D11_file, index_range=np.array(temp)) \
+                for temp in zip(result['offset_start'], result['offset_end'])]                   
         if result['type'] == 'ATM_Qfit':
             D=[Qfit_data(filename=this_file, index_range=np.array(temp)) for temp in zip(result['offset_start'], result['offset_end'])]
         if result['type'] == 'ATM_waveform':
@@ -641,8 +662,8 @@ def append_data(group, field, newdata):
         group[field]=np.concatenate((group[field], newdata), axis=0)
     return
 
-def index_list_for_files(filename_list, file_type, delta, SRS_proj4, dir_root=''):
+def index_list_for_files(filename_list, file_type, delta, SRS_proj4, dir_root='', group='index'):
     index_list=list()
     for filename in filename_list:
-        index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, number=0))
+        index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, group=group, number=0))
     return index_list

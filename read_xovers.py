@@ -13,8 +13,8 @@ from PointDatabase.point_data import point_data
 from PointDatabase.mapData import mapData
 import numpy as np
 
-def read_xovers(xover_base='/Volumes/ice2/ben/scf/AA_06/tiles', release='001', cycle=None, verbose=False):
-    xover_dir='/Volumes/ice2/ben/scf/AA_06/tiles/001//cycle_%s/xovers' % cycle
+def read_xovers(xover_base='/Volumes/ice2/ben/scf/AA_06/tiles', release='001', cycle=None, verbose=False, wildcard='*'):
+    xover_dir=f'{xover_base}/{release}/cycle_%s/xovers' % cycle
     tiles=glob.glob(xover_dir+'/*.h5')
     with h5py.File(tiles[0],'r') as h5f:
         fields=[key for key in h5f['data_0'].keys()]
@@ -22,7 +22,7 @@ def read_xovers(xover_base='/Volumes/ice2/ben/scf/AA_06/tiles', release='001', c
     D=[]
     meta={'slope_x':[], 'slope_y':[], 'grounded':[]}
     #X=[]    
-    for tile in glob.glob(xover_dir+'/*.h5'):
+    for tile in glob.glob(xover_dir+'/'+wildcard+'.h5'):
         try:
             with h5py.File(tile,'r') as h5f:
                 for field in ['slope_x', 'slope_y','grounded']:

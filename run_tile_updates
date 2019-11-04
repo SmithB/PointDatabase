@@ -1,15 +1,18 @@
 #! /bin/env bash
 
-data_dir=/Volumes/ice2/ben/scf/GL_06/002/
+release=002
+data_dir=/Volumes/ice2/ben/scf/GL_06/
 
-for cycle in 1 3; do
+for cycle in 1; do
 
-    ATL06_base=$data_dir/cycle_0$cycle
+    ATL06_base=$data_dir/$release/cycle_0$cycle
 
-    tile_dir=$data_dir/tiles/002/
+    tile_dir=$data_dir/tiles/$release/cycle_0$cycle
     [ -d $tile_dir ] || mkdir $tile_dir
+    echo "ATL06_base="$ATL06_base
+    echo "tile_dir=" $tile_dir
 
-    #python3 index_GL_ATL06.py $ATL06_base
+    python3 index_GL_ATL06.py $ATL06_base
     ATL06_tiles.py $tile_dir -q tile_queue.txt -G $ATL06_base"/index/GeoIndex.h5" -H 1 -c $cycle
     # run the tiles in parallel
     cat tile_queue.txt | xargs -P 8 -I CMD bash -c CMD

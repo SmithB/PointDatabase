@@ -217,11 +217,11 @@ class mapData(object):
            print("Error is" )
            print(e)
            
-    def show(self, ax=None):
+    def show(self, ax=None, **kwargs):
         if ax is None:
-            h_im = plt.imshow(self.z, extent=self.extent, origin='lower')
+            h_im = plt.imshow(self.z, extent=self.extent, origin='lower', **kwargs)
         else:
-            h_im = ax.imshow(self.z, extent=self.extent, origin='lower')
+            h_im = ax.imshow(self.z, extent=self.extent, origin='lower', **kwargs)
         return h_im
         
     def interp(self, x, y, gridded=False, band=0):
