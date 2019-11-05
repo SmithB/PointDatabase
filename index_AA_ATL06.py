@@ -38,6 +38,8 @@ if not os.path.isdir(out_dir):
 REGEN_individual=False
 REGEN_master=True
 
+
+
 for h5_file in h5_files:
     out_file=out_dir+'/'+h5_file.split('/')[-1]
     if os.path.isfile(out_file):
@@ -45,6 +47,7 @@ for h5_file in h5_files:
             os.remove(out_file)
             geo_index(SRS_proj4=SRS_proj4, delta=resolution).from_list(index_list_for_files([h5_file], u'ATL06', resolution, SRS_proj4)).to_file(out_file)
     else:
+        print(out_file)
         geo_index(SRS_proj4=SRS_proj4, delta=resolution).from_list(index_list_for_files([h5_file], u'ATL06', resolution, SRS_proj4)).to_file(out_file)
 
 
