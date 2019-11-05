@@ -188,6 +188,8 @@ class ATL06_data:
         if "derived" in self.field_dict and "rss_along_track_dh" in self.field_dict['derived']:
             self.get_rss_along_track_dh()
         
+        if "derived" in self.field_dict and "min_along_track_dh" in self.field_dict['derived']:
+            self.get_min_along_track_dh()
         # assign fields that must be copied from single-value attributes in the
         # h5 file
         if 'cycle_number' in self.list_of_fields:
@@ -356,6 +358,20 @@ class ATL06_data:
             self.rss_along_track_dh[0,:]=(self.h_li[1,:]-self.h_li[0,:] - (self.x_atc[1,:]-self.x_atc[0,:])*self.dh_fit_dx[0,:])**2
             self.rss_along_track_dh[-1,:]=(self.h_li[-1,:]-self.h_li[-2,:] - (self.x_atc[-1,:]-self.x_atc[-2,:])*self.dh_fit_dx[-1,:])**2
             self.rss_along_track_dh = np.sqrt(self.rss_along_track_dh)
+        
+    def get_min_along_track_dh(self):
+        self.min_along_track_dh=np.zeros(list(self.shape)+[2])
+        n_pts=self.shape[0]
+        if n_pts > 1:
+            i0=slice(1, n_pts-1)
+            for dim3, ii in enumerate([-1, 1]):
+                i1=slice(1+ii, n_pts-1+ii)
+                dx=self.x_atc[i0,:]-self.x_atc[i1,:]
+                self.min_along_track_dh[i0,:, dim3] = np.abs(self.h_li[i0,:]-self.dh_fit_dx[i0,:]*dx-self.h_li[i1,:])
+            self.min_along_track_dh = np.nanmin(self.min_along_track_dh, axis=2)
+            self.min_along_track_dh[0,:]=np.abs(self.h_li[1,:]-self.h_li[0,:] - (self.x_atc[1,:]-self.x_atc[0,:])*self.dh_fit_dx[0,:])
+            self.min_along_track_dh[-1,:]=np.abs(self.h_li[-1,:]-self.h_li[-2,:] - (self.x_atc[-1,:]-self.x_atc[-2,:])*self.dh_fit_dx[-1,:])
+    
         
 def delta_t_to_Matlab(delta_t):
     return 730486 + delta_t/24./3600.
