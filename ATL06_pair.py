@@ -16,6 +16,7 @@ class ATL06_pair:
             self.dh_dx=D6.dh_fit_dx
             self.dh_dx.shape=[1,2]
             self.dh_dy=np.mean(D6.dh_fit_dy)
+            self.dh_dy_sigma=np.sqrt(np.sum(D6.h_li_sigma**2))/np.abs(np.diff(D6.y_atc))
             self.delta_time=np.mean(D6.delta_time)
             self.segment_id=np.mean(D6.segment_id)
             self.cycle=np.mean(D6.cycle_number)

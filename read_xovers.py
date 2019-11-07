@@ -43,4 +43,4 @@ def read_xovers(xover_base='/Volumes/ice2/ben/scf/AA_06/tiles', release='001', c
         v[field]=np.concatenate(vi, axis=1).T
     delta={field:np.diff(v[field], axis=1) for field in fields}
     bar={field:np.mean(v[field], axis=1) for field in fields}
-    return v,  delta,  bar
+    return v,  delta,  bar, meta

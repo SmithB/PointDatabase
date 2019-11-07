@@ -35,6 +35,12 @@ class point_data(object):
         self.size=None
         self.filename=None
 
+    def __repr__(self):
+        out=str(self.__class__)
+        out += " of shape " + str(self.shape)
+        out += ", with fields " + str(self.list_of_fields)
+        return out
+
     def __default_field_dict__(self):
         """
         Define the default fields that get read from the h5 file
