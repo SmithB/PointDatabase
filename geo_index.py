@@ -673,9 +673,9 @@ def append_data(group, field, newdata):
 def index_list_for_files(filename_list, file_type, delta, SRS_proj4, dir_root='', group='index'):
     index_list=list()
     for filename in filename_list:
-<<<<<<< HEAD
+#<<<<<<< HEAD
 #        index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, group=group, number=0))
-=======
->>>>>>> upstream/master
+#=======
+#>>>>>>> upstream/master
         index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, number=0))
     return index_list
