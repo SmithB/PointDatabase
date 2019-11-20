@@ -7,12 +7,14 @@ Created on Mon Apr 29 09:40:02 2019
 """
 import numpy as np
 import scipy.interpolate as si
+from scipy.interpolate import griddata
 import h5py
 from PointDatabase.geo_index import geo_index
 from PointDatabase.point_data import point_data
 from PointDatabase.point_data import pt_blockmedian
 from PointDatabase.xover_search import dilate_bins
 from PointDatabase.mapData import mapData
+from PointDatabase.read_surfmask import landmask
 from PointDatabase.ATL06_filters import segDifferenceFilter
 from LSsurf.unique_by_rows import unique_by_rows
 import sys
@@ -20,6 +22,8 @@ import sys
 from glob import glob
 from PointDatabase.geo_index import geo_index, index_list_for_files
 
+import matplotlib
+import matplotlib.pyplot as plt
 import os
 import re 
 
@@ -171,28 +175,36 @@ def make_queue(tile_root, GI_file, queue_file, cycle=1, hemisphere=-1, tile_spac
     tile_spacing=1.e5    
     # EDIT HERE TO SET THE MASK LOCATIONS
     if hemisphere==-1:
-        mask_G=mapData().from_geotif('/Volumes/ice1/ben/MOA/moa_2009_1km.tif')
-        mask_G.z=mask_G.z>100
+#        mask_G=mapData().from_geotif('/Volumes/ice1/ben/MOA/moa_2009_1km.tif')
+        mask_G=landmask().read_surftype_h5('/Volumes/Data/asas/anc_data/anc12/surfmask_20180608_001_01.h5',-1)
+#        mask_G.z=mask_G.z>100
+        mask_G.z=mask_G.z>0.0
         XR=[-2800, 2800]
         YR=[-2500, 2500]
     else:
-        mask_G=mapData().from_geotif('/Volumes/ice1/ben/GimpMasks_v1.1/GimpIceMask_1km.tif')
+#        mask_G=mapData().from_geotif('/Volumes/ice1/ben/GimpMasks_v1.1/GimpIceMask_1km.tif')
+        mask_G=landmask().read_surftype_h5('/Volumes/Data/asas/anc_data/anc12/surfmask_20180608_001_01.h5',1)
         mask_G.z=mask_G.z==1
         XR=[-700, 1000]
         YR=[-3360, -500]
     # tile centers:
     x0, y0=np.meshgrid(np.arange(XR[0], XR[1], tile_spacing/1000)*1000, np.arange(YR[0], YR[1], tile_spacing/1000)*1000)
-    mI=si.interp2d(mask_G.x, mask_G.y, mask_G.z.astype(np.float64))
-    maski=mI(x0[1,:], y0[:,1]).ravel()>0.5
+    zipxy = np.dstack((np.ravel(mask_G.x),np.ravel(mask_G.y)))
+    zipxy = np.squeeze(zipxy, axis=0)
+    maski = griddata(zipxy,np.ravel(mask_G.z), (x0,y0), method = 'cubic').ravel() > 0.5
+#    mI=si.interp2d(mask_G.x, mask_G.y, mask_G.z.astype(np.float64))
+#    maski=mI(x0[1,:], y0[:,1]).ravel()>0.5
     x0=x0.ravel()[maski]
     y0=y0.ravel()[maski]
+
     xyTile=set([xy0 for xy0 in zip(x0, y0)])
     dilate_bins(xyTile, tile_spacing)
 
-    this_python_file=os.path.abspath(sys.argv[0])
+    this_python_file=os.path.abspath(__file__)
+    this_python_exe=sys.executable
     with open(queue_file,'w') as qf:
         for xy in xyTile:
-            qf.write(f"python3 {this_python_file} {tile_root} -G {GI_file} -H {hemisphere} --xy {xy[0]} {xy[1]} -c {cycle} --rel {rel}" + "\n")
+            qf.write(f"{this_python_exe} {this_python_file} {tile_root} -G {GI_file} -H {hemisphere} --xy {xy[0]} {xy[1]} -c {cycle} --rel {rel}" + "\n")
   
 def index_tiles(tile_dir_root, cycle, hemisphere):
      """
