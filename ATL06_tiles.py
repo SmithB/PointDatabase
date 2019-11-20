@@ -176,15 +176,18 @@ def make_queue(tile_root, GI_file, queue_file, cycle=1, hemisphere=-1, tile_spac
     # EDIT HERE TO SET THE MASK LOCATIONS
     if hemisphere==-1:
 #        mask_G=mapData().from_geotif('/Volumes/ice1/ben/MOA/moa_2009_1km.tif')
-        mask_G=landmask().read_surftype_h5('/Volumes/Data/asas/anc_data/anc12/surfmask_20180608_001_01.h5',-1)
+#        mask_G=landmask().read_surftype_h5('/Volumes/Data/asas/anc_data/anc12/surfmask_20180608_001_01.h5',-1)
+        mask_G=landmask().read_surftype_h5('surfmask_20180608_001_01.h5',-1)
 #        mask_G.z=mask_G.z>100
         mask_G.z=mask_G.z>0.0
         XR=[-2800, 2800]
         YR=[-2500, 2500]
     else:
 #        mask_G=mapData().from_geotif('/Volumes/ice1/ben/GimpMasks_v1.1/GimpIceMask_1km.tif')
-        mask_G=landmask().read_surftype_h5('/Volumes/Data/asas/anc_data/anc12/surfmask_20180608_001_01.h5',1)
-        mask_G.z=mask_G.z==1
+#        mask_G=landmask().read_surftype_h5('/Volumes/Data/asas/anc_data/anc12/surfmask_20180608_001_01.h5',1)
+        mask_G=landmask().read_surftype_h5('surfmask_20180608_001_01.h5',1)
+#        mask_G.z=mask_G.z==1
+        mask_G.z=mask_G.z>0.0
         XR=[-700, 1000]
         YR=[-3360, -500]
     # tile centers:
