@@ -104,6 +104,8 @@ class geo_index(dict):
         out_srs.ImportFromProj4(self.attrs['SRS_proj4'])
         ll_srs=osr.SpatialReference()
         ll_srs.ImportFromEPSG(4326)
+        if hasattr(osr,'OAMS_TRADITIONAL_GIS_ORDER'):
+            ll_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ct=osr.CoordinateTransformation(ll_srs, out_srs).TransformPoint
         #xy=[ct(*xyz)[0:2] for xyz in zip(np.ravel(lon), np.ravel(lat), np.zeros_like(lat).ravel())]
         x, y, z = list(zip(*[ct(*xy) for xy in zip(np.ravel(lon), np.ravel(lat), np.zeros_like(lat).ravel())]))
@@ -324,6 +326,8 @@ class geo_index(dict):
         out_srs.ImportFromProj4(self.attribs['SRS_proj4'])
         ll_srs=osr.SpatialReference()
         ll_srs.ImportFromEPSG(4326)
+        if hasattr(osr,'OAMS_TRADITIONAL_GIS_ORDER'):
+            ll_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ct=osr.CoordinateTransformation(ll_srs, out_srs)
         x, y = list(zip(*[ct.TransformPoint(xy) for xy in zip(np.ravel(lon), np.ravel(lat))]))
         delta=self.attribs['delta']
@@ -468,6 +472,8 @@ class geo_index(dict):
         xy_bin=self.bins_as_array()
         internal_srs=osr.SpatialReference()
         internal_srs.ImportFromProj4(self.attrs['SRS_proj4'])
+        if hasattr(osr,'OAMS_TRADITIONAL_GIS_ORDER'):
+            internal_srs.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
         ll_srs=osr.SpatialReference()
         ll_srs.ImportFromEPSG(4326)
         ct=osr.CoordinateTransformation( internal_srs, ll_srs)
@@ -667,5 +673,9 @@ def append_data(group, field, newdata):
 def index_list_for_files(filename_list, file_type, delta, SRS_proj4, dir_root='', group='index'):
     index_list=list()
     for filename in filename_list:
+#<<<<<<< HEAD
+#        index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, group=group, number=0))
+#=======
+#>>>>>>> upstream/master
         index_list.append(geo_index(SRS_proj4=SRS_proj4, delta=delta).for_file(filename, file_type, dir_root=dir_root, number=0))
     return index_list
