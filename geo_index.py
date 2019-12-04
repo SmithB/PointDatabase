@@ -246,10 +246,16 @@ class geo_index(dict):
             temp=list()
             this_field_dict={'corrected_h':('latitude','longitude')}
             for beam_pair in (1, 2, 3):
-                D=ATL11.data().from_file(filename, pair=beam_pair, field_dict=this_field_dict).get_xy(self.attrs['SRS_proj4'])
-                if D.x.shape[0] > 0:
-                    temp.append(geo_index(delta=self.attrs['delta'], \
-                                          SRS_proj4=self.attrs['SRS_proj4']).from_xy([D.x, D.y], '%s:pair%d' % (filename_out, beam_pair), 'ATL11', number=number))
+                try:
+                    D=ATL11.data().from_file(filename, pair=beam_pair, field_dict=this_field_dict).get_xy(self.attrs['SRS_proj4'])
+                    if D.x.shape[0] > 0:
+                        temp.append(geo_index(delta=self.attrs['delta'], \
+                            SRS_proj4=self.attrs['SRS_proj4']).from_xy([D.x, D.y], \
+                            '%s:pair%d' % (filename_out, beam_pair), \
+                            'ATL11', number=number))
+                except Exception as e:
+                    print("geo_index.py: caught exception in making geoindex for an ATL11:")
+                    print(e)
             self.from_list(temp)
 
         if file_type in ['ATM_Qfit']:
