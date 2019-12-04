@@ -18,7 +18,7 @@ import glob
 import re
 import sys
 
-def ATL06_crossovers(xy0, tile_dir):
+def ATL06_crossovers(xy0, tile_dir, different_cycles=False):
     D=read_tile(xy0, tile_dir)
     for Di in D:
         segDifferenceFilter(Di, tol=2, setValid=True, toNaN=True, subset=False)
@@ -29,6 +29,8 @@ def ATL06_crossovers(xy0, tile_dir):
     for ii in np.arange(len(D)):
         for jj in np.arange(len(D)):
             if (D[ii].size <2) or (D[jj].size < 2) or (ii>=jj) or (D[ii].rgt[0]==D[jj].rgt[0]):
+                continue
+            if different_cycles and D[ii].cycle[0]==D[jj].cycle[0]:
                 continue
             xyC, inds, L=cross_tracks([D[ii], D[jj]], delta=20, delta_coarse=1000)
             if xyC is not None:
@@ -85,13 +87,16 @@ def read_xovers(xover_dir):
     return D, X
 
 def make_queue(top_dir, cycle, hemisphere, queue_file):
+    out_dir=top_dir+'/xovers/cycle_'+cycle
+    if not os.path.isdir(out_dir):
+        os.mkdir(out_dir)
     with open(queue_file,'w') as qf:
         cycle_dirs=glob.glob(top_dir+'/cycle_'+cycle)
         for cycle_dir in cycle_dirs:
             files=glob.glob(cycle_dir+'/E*.h5')
             for file in files:
-                if not os.path.isfile(top_dir+'/cycle_'+cycle+'/xovers/'+os.path.basename(file)):
-                    qf.write('python3 ~/git_repos/PointDatabase/cross_ATL06_tile.py %s %d %s\n' %  ( cycle_dir, hemisphere, os.path.basename(file)))
+                if not os.path.isfile(out_dir+'/'+os.path.basename(file)):
+                    qf.write('python3 ~/git_repos/PointDatabase/cross_ATL06_tile.py %s %d %s %s\n' %  ( cycle_dir, hemisphere, out_dir, os.path.basename(file)))
 
 def calc_slope(xovers, hemisphere=-1):
 
@@ -124,13 +129,13 @@ def calc_slope(xovers, hemisphere=-1):
 def main():
     tile_dir=sys.argv[1]
     hemisphere=int(sys.argv[2])
-    out_dir=tile_dir+'/xovers/'
+    out_dir=sys.argv[3]
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
-    if len(sys.argv)<3:
+    if len(sys.argv)<4:
         files=glob.glob(tile_dir+'/*.h5')
     else:
-        files=sys.argv[3:]
+        files=sys.argv[4:]
 
     for file in files:
         print(file)
