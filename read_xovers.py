@@ -13,8 +13,7 @@ from PointDatabase.point_data import point_data
 from PointDatabase.mapData import mapData
 import numpy as np
 
-def read_xovers(xover_base='/Volumes/ice2/ben/scf/AA_06/tiles', release='001', cycle=None, verbose=False, wildcard='*'):
-    xover_dir=f'{xover_base}/{release}/cycle_%s/xovers' % cycle
+def read_xovers(xover_dir, verbose=False, wildcard='*'):
     tiles=glob.glob(xover_dir+'/*.h5')
     with h5py.File(tiles[0],'r') as h5f:
         fields=[key for key in h5f['data_0'].keys()]
