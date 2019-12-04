@@ -312,7 +312,7 @@ def main():
     blockmedian_scale=None
     #Skip seg_diff_Scale (August 27: changed from 5 to None)
     seg_diff_scale=None
-    out_dir=args.tile_root+'/tiles/'+args.rel+('/cycle_%02d' % args.cycle)
+    out_dir=args.tile_root+'/'+args.rel+('/cycle_%02d' % args.cycle)
     print('out dir',out_dir)
 
     if not os.path.isdir(out_dir):
@@ -339,3 +339,7 @@ def main():
 
 if __name__=='__main__':
     main()
+
+#/Volumes/ice2/ben/scf/AA_06/tiles  -H -1 --rel 002  -q /home/ben/temp//tile_run/queue_cycle_04.txt -c 4 -G /Volumes/ice2/ben/scf/AA_06//002/cycle_04/index/GeoIndex.h5
+
+#/Volumes/ice2/ben/scf/GL_06/tiles  -H 1 --rel 002  -q /home/ben/temp//tile_run/queue_cycle_04.txt -c 4 -G /Volumes/ice2/ben/scf/GL_06//002/cycle_04/index/GeoIndex.h5
