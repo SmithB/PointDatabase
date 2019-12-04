@@ -152,6 +152,9 @@ class ATL06_data:
                         data=np.ones((index_range[1]-index_range[0], 2))
                         for bb in [0, 1]:
                             data[:,bb]=np.float64(h5_f[beam_names[bb]].attrs['atlas_spot_number'])
+                    elif group == "derived" and field == "sigma_geo_r":
+                        # Earlier versions of the data don't include a sigma_geo_r.  This is a fake value
+                        data=np.zeros((index_range[1]-index_range[0], 2)) +0.03
                     elif group == "derived":
                         continue
                     else:
@@ -275,6 +278,8 @@ class ATL06_data:
         except TypeError:
             for field in self.list_of_fields:
                 setattr(self, field, getattr(D6_list, field))
+        except ValueError:
+            print("ValueError")
         self.__update_size_and_shape__()
         return self
 
@@ -373,7 +378,8 @@ class ATL06_data:
             self.min_along_track_dh = np.nanmin(self.min_along_track_dh, axis=2)
             self.min_along_track_dh[0,:]=np.abs(self.h_li[1,:]-self.h_li[0,:] - (self.x_atc[1,:]-self.x_atc[0,:])*self.dh_fit_dx[0,:])
             self.min_along_track_dh[-1,:]=np.abs(self.h_li[-1,:]-self.h_li[-2,:] - (self.x_atc[-1,:]-self.x_atc[-2,:])*self.dh_fit_dx[-1,:])
-    
+        else:
+            self.min_along_track_dh=np.zeros([1,2])+np.NaN
         
 def delta_t_to_Matlab(delta_t):
     return 730486 + delta_t/24./3600.
