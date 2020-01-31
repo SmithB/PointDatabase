@@ -1,2 +1,2 @@
 # PointDatabase
-Utilities for creating and querying a database of points
+Utilities for indexing and maintaining my local database of point data.  This repo includes local functions for reading/writing and indexing data, but I am in the process of converting this repo to use the indexing/reading utilities in the pointCollection repo.  In the near future, the PointDatabase.data and geo_index classes will go away, and all new work will use pointCollection.data and pointCollection.geo_index
